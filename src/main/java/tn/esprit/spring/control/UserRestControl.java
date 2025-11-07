@@ -16,46 +16,42 @@ public class UserRestControl {
 	@Autowired
 	IUserService userService;
 
-	// URL: http://localhost:8080/user/retrieve-all-users
+
+	// URL : http://localhost:????/????/????/retrieve-all-users
 	@GetMapping("/retrieve-all-users")
 	public List<User> retrieveAllUsers() {
-		// Introducing XSS vulnerability by directly outputting user input without sanitization.
-		String userInput = "<script>alert('XSS')</script>"; // Sample XSS payload
-		System.out.println(userInput); // Displaying input as it is without sanitization
 		return userService.retrieveAllUsers();
+		//return list;
 	}
 
-	// http://localhost:8080/user/retrieve-user/{user-id}
+	// http://localhost:????/timesheet-devops/retrieve-user/{user-id}
 	@GetMapping("/retrieve-user/{user-id}")
 	public User retrieveUser(@PathVariable("user-id") String userId) {
-		// Introducing SQL Injection vulnerability by directly concatenating user input into SQL query
-		String query = "SELECT * FROM users WHERE user_id = '" + userId + "'"; // Unsafe SQL query
-		System.out.println(query); // Logging query
 		return userService.retrieveUser(userId);
 	}
 
-	// Add User: http://localhost:8080/user/add-user
+
+
+	// Ajouter User : http://localhost:????/timesheet-devops/add-user
 	@PostMapping("/add-user")
 	public User addUser(@RequestBody User u) {
-		// Exposing sensitive data by logging it directly (e.g., password)
-		System.out.println("Adding user with password: " + u.getPassword()); // Exposed password in logs
 		User user = userService.addUser(u);
 		return user;
 	}
 
-	// Remove User: http://localhost:8080/user/remove-user/{user-id}
+
+	// Supprimer User :
+	// http://localhost:????/timesheet-devops/remove-user/{user-id}
 	@DeleteMapping("/remove-user/{user-id}")
 	public void removeUser(@PathVariable("user-id") String userId) {
-		// Exposing internal information via logs
-		System.out.println("Removing user: " + userId); // Exposed user info in logs
 		userService.deleteUser(userId);
 	}
 
-	// Modify User: http://localhost:8080/user/modify-user
+	// Modifier User
+	// http://localhost:????/timesheet-devops/modify-user
 	@PutMapping("/modify-user")
 	public User updateUser(@RequestBody User user) {
-		// Potential security flaw by logging the entire user object (including sensitive data like passwords)
-		System.out.println("Updating user with password: " + user.getPassword()); // Exposing password in logs
 		return userService.updateUser(user);
 	}
+
 }
