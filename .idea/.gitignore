@@ -1,0 +1,70 @@
+# Default ignored files
+/shelf/
+/workspace.xml
+# Editor-based HTTP Client requests
+/httpRequests/
+# Datasource local storage ignored files
+/dataSources/
+/dataSources.local.xml
+# .gitignore for Spring Boot
+
+# Compiled class files
+*.class
+
+# Log files
+*.log
+
+# Operating System files
+.DS_Store
+Thumbs.db
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# Eclipse IDE
+*.log
+*.bak
+*.swp
+*.project
+*.classpath
+.settings/
+
+# Maven build directory
+/target/
+
+# Gradle build directory
+/build/
+
+# Spring Boot specific
+*.war
+*.jar
+*.ear
+
+# Environment files
+.env
+*.env
+
+# Other generated files
+*.h2.db
+*.hypersonic.db
+
+# Node.js
+node_modules/
+
+# IntelliJ IDEA specific (if you use IntelliJ)
+*.iml
+.idea/
+
+# VS Code settings
+.vscode/
+
+# Log files
+*.log
+
+# Other common ignored files
+*.bak
+*.swp
+
+# Exclude test output files
+test-outputs/
