@@ -20,11 +20,13 @@ public class UserServiceImpl implements IUserService {
 
 	private static final Logger l = LogManager.getLogger(UserServiceImpl.class);
 
-	@Override
-	public List<User> retrieveAllUsers() { 
-
-		return null;
-	}
+    @Override
+    public List<User> retrieveAllUsers() { 
+        // Simulate a sensitive value to trigger Gitleaks
+        String secretApiKey = "sk_test_4eC39HqLyjWDarjtT1zdp7dc";  // Fake API key (Gitleaks will detect this)
+        l.info("Retrieving all users. API Key: {}", secretApiKey); // Do NOT log sensitive data in real code!
+        return null;
+    }
 
 
 	@Override
