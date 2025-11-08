@@ -23,8 +23,7 @@ public class UserServiceImpl implements IUserService {
     @Override
     public List<User> retrieveAllUsers() { 
         // Simulate a sensitive value to trigger Gitleaks
-        String secretApiKey = "sk_test_4eC39HqLyjWDarjtT1zdp7dc";  // Fake API key (Gitleaks will detect this)
-        l.info("Retrieving all users. API Key: {}", secretApiKey); // Do NOT log sensitive data in real code!
+        l.info("Retrieving all users. API Key: {}"); // Do NOT log sensitive data in real code!
         return null;
     }
 
