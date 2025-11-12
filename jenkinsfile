@@ -1,0 +1,159 @@
+pipeline {
+    agent any
+    stages {
+
+        // === 1. Retrieve Source Code ===
+        stage('Récupération du code Git') {
+            steps {
+                git branch: 'main',
+                    changelog: false,
+                    credentialsId: 'jenkins-github',
+                    url: 'https://github.com/khalill7/devsecops.git'
+            }
+        }
+
+        // === 2. Build Application ===
+        stage('MAVEN Build') {
+            steps {
+                sh 'mvn clean compile'
+            }
+        }
+
+        // === 3. SAST – Static Code Analysis (Semgrep) ===
+        stage('Semgrep Scan (SAST)') {
+            steps {
+                script {
+                    sh '''
+                        docker run --rm --privileged -v $WORKSPACE:/workspace semgrep/semgrep:latest bash -c "
+                        semgrep --config=auto --jobs 1 --exclude '*/proc/*' \
+                        --output=/workspace/semgrep-report.json /workspace/src
+                        "
+                    '''
+                }
+            }
+        }
+
+        // === 4. Secrets Scan – Gitleaks ===
+        stage('Gitleaks Scan (Secrets)') {
+            steps {
+                script {
+                    def exitCode = sh(
+                        script: '''
+                            set +e
+                            docker run --rm -v $WORKSPACE:/workspace zricethezav/gitleaks:latest detect \
+                            --source=/workspace --report-path=/workspace/gitleaks-report.json \
+                            --report-format=json
+                        ''',
+                        returnStatus: true
+                    )
+                    echo "Gitleaks exit code: ${exitCode}"
+                    if (exitCode == 1) {
+                        emailext(
+                            subject: "🚨 ALERT: Secrets found in Gitleaks scan",
+                            body: """<p>Secrets were detected by Gitleaks.</p>
+                                     <p><a href="${env.BUILD_URL}artifact/gitleaks-report.json">Download report</a></p>""",
+                            to: "Guesmi.Khalil@esprit.tn"
+                        )
+                        currentBuild.result = 'UNSTABLE'
+                    } else if (exitCode != 0) {
+                        error("Gitleaks failed with code ${exitCode}")
+                    }
+                }
+            }
+        }
+
+        // === 5. SCA – Dependency Analysis (Trivy + OWASP) ===
+stage('SCA – Dependency Analysis') {
+    steps {
+        script {
+            sh '''
+               docker run --rm \
+  -e TRIVY_DB_REPOSITORY=ghcr.io/aquasecurity/trivy-db \
+  -e TRIVY_TIMEOUT=10m \
+  -v /var/lib/jenkins/trivy-cache:/root/.cache/ \
+  -v $WORKSPACE:/workspace \
+  aquasec/trivy:latest fs \
+  --scanners vuln,secret,config \
+  --exit-code 0 \
+  --format json \
+  --output /workspace/trivy-report.json /workspace
+            '''
+        }
+
+        dependencyCheck additionalArguments: "--format XML",
+                        odcInstallation: 'Default'
+        dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+    }
+}
+
+
+        // === 6. Docker Image Scan (Trivy) ===
+        stage('Docker Image Scan') {
+            steps {
+                script {
+                    // Adjust image name if you build one earlier in your pipeline
+                    def imageName = "khalill7/devsecops:latest"
+                    sh "docker build -t ${imageName} ."
+                    sh '''
+                        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+                        aquasec/trivy:latest image --severity HIGH,CRITICAL \
+                        --format json --output trivy-image-report.json ${imageName}
+                    '''
+                }
+            }
+        }
+
+        // === 7. DAST – Dynamic App Scan (OWASP ZAP) ===
+stage('DAST – OWASP ZAP Scan') {
+    steps {
+        script {
+            zapBaseline(
+                zapInstallation: 'Default',       // name from Global Tool Config
+                target: 'http://192.168.50.4:8080', // URL of your app
+                failBuild: false,                  // don't fail the build automatically
+                generateReports: true,             // generate HTML report
+                timeout: 600                       // timeout in seconds
+            )
+        }
+    }
+}
+
+
+        // === 8. SAST – SonarQube ===
+        stage('SonarQube Analysis') {
+            environment {
+                SONAR_HOST_URL = 'http://192.168.50.4:9000/'
+                SONAR_AUTH_TOKEN = credentials('sonarqube')
+            }
+            steps {
+                sh 'mvn sonar:sonar -Dsonar.projectKey=khalill7 -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_AUTH_TOKEN'
+            }
+        }
+    }
+
+    post {
+        always {
+            archiveArtifacts artifacts: '*.json, *.html', allowEmptyArchive: true
+            publishHTML(target: [
+                reportName: 'Security Reports',
+                reportDir: '.',
+                reportFiles: 'zap-report.html',
+                keepAll: true
+            ])
+            echo "Pipeline completed with aggregated reports."
+        }
+        success {
+            echo "✅ All security checks passed."
+        }
+        unstable {
+            echo "⚠️ Some scans detected issues (marked UNSTABLE). Check reports."
+        }
+        failure {
+            emailext(
+                subject: "❌ Pipeline Failure",
+                body: "The pipeline failed. Check the Jenkins build details: ${BUILD_URL}",
+                to: "Guesmi.Khalil@esprit.tn"
+            )
+        }
+    }
+}
