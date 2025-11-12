@@ -1,5 +1,5 @@
 # Use a lightweight JDK base image
-FROM openjdk:17-jdk-slim
+FROM eclipse-temurin:17-jdk-jammy
 
 # Copy your JAR from Maven target folder
 COPY target/*.jar app.jar
