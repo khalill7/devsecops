@@ -158,7 +158,7 @@ pipeline {
                 reportFiles: 'zap-baseline-report.html',
                 keepAll: true
             ])
-//email
+//email webhook
             echo "Pipeline completed with aggregated reports."
 
             emailext(
