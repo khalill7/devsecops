@@ -102,7 +102,7 @@ pipeline {
                 }
             }
         }
-//DAST zap
+//DAST scan
         stage('DAST – OWASP ZAP Baseline') {
             steps {
                 script {
