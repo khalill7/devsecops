@@ -21,7 +21,7 @@ pipeline {
                 sh 'mvn clean compile'
             }
         }
-//semgrep
+//semgrep scan
         stage('Semgrep Scan (SAST)') {
             steps {
                 script {
